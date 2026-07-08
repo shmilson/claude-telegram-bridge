@@ -57,6 +57,12 @@ test message.
    **Linux:** add a cron line — see [`reference/SETUP.md`](reference/SETUP.md).
 6. Send the bot a message; within ~2 minutes it acknowledges and replies.
 
+## Chat commands
+
+Send `/new` (or `/reset`, `/clear`) to start a fresh conversation. It drops the resumed session so
+context stops accumulating, which is the main token cost of a long-lived bot. Handled locally with
+no Claude call.
+
 ## Scheduled tasks
 
 `tools/tg-bridge/tg-scheduled.sh "<prompt>"` runs a one-shot Claude task and sends the result to

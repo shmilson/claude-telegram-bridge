@@ -51,6 +51,16 @@ while IFS= read -r MSG; do
   [ -z "$MSG" ] && continue
   STAMP="$(date +%F_%H%M%S)"
 
+  # Reset command: start a fresh conversation (drops memory). Handled here, no
+  # Claude call, so it costs nothing and shrinks the growing --resume context.
+  LMSG="$(printf '%s' "$MSG" | tr '[:upper:]' '[:lower:]')"
+  case "$LMSG" in
+    /new|/reset|/clear|"new chat"|"reset")
+      rm -f "$SESS"
+      "$PY" "$TG" send-text "🔄 Fresh conversation started. Previous context cleared." >/dev/null 2>&1 || true
+      continue ;;
+  esac
+
   # Acknowledge receipt immediately (a task may take minutes).
   "$PY" "$TG" send-text "✓ Got it — working on this…" >/dev/null 2>>"$LOG/chat_$STAMP.err" || true
 
