@@ -1,0 +1,9 @@
+# Runtime state written by the bridge (never commit)
+.tg-bridge/
+
+# Secrets — token + chat id live here
+.env
+*.env
+
+# OS noise
+.DS_Store
