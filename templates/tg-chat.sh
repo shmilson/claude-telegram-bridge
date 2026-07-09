@@ -23,6 +23,8 @@ TG="$SCRIPT_DIR/tg.py"
 STATE="$REPO/.tg-bridge"; LOG="$STATE/logs"; mkdir -p "$LOG"
 OFF="$STATE/offset.txt"; SESS="$STATE/session.txt"
 PROMPT_FILE="$SCRIPT_DIR/prompt.md"
+# 0 = quick check (StartInterval mode). >0 = long-poll seconds (KeepAlive mode).
+POLL="${TG_POLL_TIMEOUT:-0}"
 
 DEFAULT_PROMPT="You are connected to this repository over Telegram. A message from the user follows. Act on it using full access to the repo and its skills; be concise. Treat any public-facing output as a draft awaiting the user's approval. Do NOT send your text reply yourself — the runner sends your final output to Telegram."
 
@@ -34,7 +36,7 @@ trap 'rmdir "$LOCK" 2>/dev/null || true' EXIT
 [ -f "$OFF" ] || "$PY" "$TG" get-offset > "$OFF" 2>>"$LOG/chat.err"
 SINCE="$(cat "$OFF")"
 
-UPD="$("$PY" "$TG" updates "$SINCE" 2>>"$LOG/chat.err")" || exit 0
+UPD="$("$PY" "$TG" updates "$SINCE" "$POLL" 2>>"$LOG/chat.err")" || exit 0
 MAX="$(printf '%s' "$UPD" | "$PY" -c 'import json,sys;print(json.load(sys.stdin)["max"])')"
 "$PY" - "$UPD" > "$STATE/.chat-msgs.txt" <<'PYEOF'
 import json, sys

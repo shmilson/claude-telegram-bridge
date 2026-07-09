@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>__LABEL__</string>
+
+  <!-- MUST be /bin/bash -l <script>. Using -lc causes exit 126. -->
+  <key>ProgramArguments</key>
+  <array>
+    <string>/bin/bash</string>
+    <string>-l</string>
+    <string>__REPO__/tools/tg-bridge/tg-chat.sh</string>
+  </array>
+
+  <!-- Long-poll mode: each run holds the Telegram connection open up to
+       TG_POLL_TIMEOUT seconds and returns the instant a message arrives, so
+       replies are near-instant. KeepAlive relaunches the (short) run after it
+       exits, so it stays as crash-resilient as the interval model — no
+       forever-loop to maintain. -->
+  <key>EnvironmentVariables</key>
+  <dict>
+    <key>TG_POLL_TIMEOUT</key>
+    <string>50</string>
+  </dict>
+
+  <key>KeepAlive</key>
+  <true/>
+  <key>RunAtLoad</key>
+  <true/>
+  <!-- launchd won't relaunch a job more than once per ThrottleInterval seconds.
+       Keeps the gap tiny after a run that exits quickly (a normal long-poll run
+       lasts ~50s, so this rarely bites). -->
+  <key>ThrottleInterval</key>
+  <integer>5</integer>
+
+  <key>StandardOutPath</key>
+  <string>__REPO__/.tg-bridge/logs/chat.out.log</string>
+  <key>StandardErrorPath</key>
+  <string>__REPO__/.tg-bridge/logs/chat.err.log</string>
+</dict>
+</plist>

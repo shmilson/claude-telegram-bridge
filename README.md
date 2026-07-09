@@ -57,6 +57,15 @@ test message.
    **Linux:** add a cron line — see [`reference/SETUP.md`](reference/SETUP.md).
 6. Send the bot a message; within ~2 minutes it acknowledges and replies.
 
+## Response latency: interval vs long-poll
+
+By default the bridge checks Telegram every 2 minutes (`StartInterval`). For near-instant replies,
+switch to long-poll mode: `templates/launchd/chat-longpoll.plist.template` sets `TG_POLL_TIMEOUT=50`
+and uses `KeepAlive`, so each run holds the connection open up to 50s and returns the moment a
+message arrives. It stays crash-resilient (short runs relaunched by launchd, no forever-loop) and
+CPU stays near zero (a long-poll is a blocked wait, not a busy loop). `tg-chat.sh` supports both via
+`TG_POLL_TIMEOUT` (0 = interval mode).
+
 ## Chat commands
 
 Send `/new` (or `/reset`, `/clear`) to start a fresh conversation. It drops the resumed session so

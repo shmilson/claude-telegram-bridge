@@ -74,6 +74,15 @@ it there. (The default is generic and fine to start with.)
    **Important:** ProgramArguments must be `/bin/bash -l <script>` (with `-l`, no `-c` — `-lc`
    causes exit 126).
 
+#### Near-instant responses (long-poll, optional)
+Instead of polling every 2 minutes, hold the Telegram connection open so replies come within ~1s.
+Use `templates/launchd/chat-longpoll.plist.template` instead of `chat.plist.template`. It sets
+`TG_POLL_TIMEOUT=50` (each run long-polls up to 50s) and uses `KeepAlive` instead of `StartInterval`,
+so launchd relaunches each short run — near-instant, and as crash-resilient as the interval model
+(no forever-loop). CPU stays near zero: a long-poll is a blocked wait, not a busy loop. The 50s cap
+is deliberate (Telegram caps the timeout, and NAT/proxies reap idle connections; a short cycle also
+doubles as a health check). `tg-chat.sh` supports both modes via `TG_POLL_TIMEOUT` (0 = interval).
+
 ### Linux (cron)
 `crontab -e` and add: `*/2 * * * * /bin/bash -l <REPO>/tools/tg-bridge/tg-chat.sh >> <REPO>/.tg-bridge/logs/cron.log 2>&1`
 

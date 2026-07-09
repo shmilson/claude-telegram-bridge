@@ -19,11 +19,11 @@ CHAT = os.environ.get("TELEGRAM_CHAT_ID", "")
 API = f"https://api.telegram.org/bot{TOKEN}"
 
 
-def _get(method, params=None):
+def _get(method, params=None, timeout=35):
     url = f"{API}/{method}"
     if params:
         url += "?" + urllib.parse.urlencode(params)
-    with urllib.request.urlopen(url, timeout=35) as r:
+    with urllib.request.urlopen(url, timeout=timeout) as r:
         return json.load(r)
 
 
@@ -70,11 +70,15 @@ def get_offset():
     return max(ids) if ids else 0
 
 
-def updates(since):
+def updates(since, poll_timeout=0):
     """{'max': highest_update_id, 'messages': [{update_id, text}]} for text
     messages from our chat after `since`. `max` covers ALL updates so the caller
-    can advance its offset even past non-chat updates."""
-    d = _get("getUpdates", {"offset": int(since) + 1, "timeout": 0})
+    can advance its offset even past non-chat updates. poll_timeout>0 turns this
+    into a long-poll: Telegram holds the connection open until a message arrives
+    or the timeout elapses (near-instant response, no busy loop)."""
+    poll_timeout = int(poll_timeout)
+    d = _get("getUpdates", {"offset": int(since) + 1, "timeout": poll_timeout},
+             timeout=poll_timeout + 15)
     res = d.get("result", [])
     mx = int(since)
     msgs = []
@@ -112,7 +116,8 @@ def main():
     elif cmd == "get-offset":
         print(get_offset())
     elif cmd == "updates":
-        print(json.dumps(updates(sys.argv[2]), ensure_ascii=False))
+        pt = sys.argv[3] if len(sys.argv) > 3 else 0
+        print(json.dumps(updates(sys.argv[2], pt), ensure_ascii=False))
     elif cmd == "poll-reply":
         r = poll_reply(sys.argv[2])
         if r:
