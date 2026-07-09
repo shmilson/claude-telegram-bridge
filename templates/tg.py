@@ -34,6 +34,28 @@ def send_text(text):
         return json.load(r)
 
 
+def _post(method, params):
+    data = urllib.parse.urlencode(params).encode()
+    with urllib.request.urlopen(f"{API}/{method}", data=data, timeout=35) as r:
+        return json.load(r)
+
+
+def set_keyboard(buttons, text="⌨️ Quick buttons below."):
+    """Show a persistent reply keyboard (one button per row). Tapping a button
+    sends its label as a normal message, which the bridge acts on. Persists
+    across later messages until replaced."""
+    kb = {"keyboard": [[b] for b in buttons],
+          "resize_keyboard": True, "is_persistent": True}
+    return _post("sendMessage", {"chat_id": CHAT, "text": text,
+                                 "reply_markup": json.dumps(kb, ensure_ascii=False)})
+
+
+def set_commands(pairs):
+    """Register the bot's / command menu (the ☰ button). pairs: (cmd, description)."""
+    cmds = [{"command": c, "description": d} for c, d in pairs]
+    return _post("setMyCommands", {"commands": json.dumps(cmds, ensure_ascii=False)})
+
+
 def _send_multipart(method, field_name, path, caption, content_type):
     boundary = "----tg" + uuid.uuid4().hex
 
@@ -124,6 +146,13 @@ def main():
             print(json.dumps(r, ensure_ascii=False))
             sys.exit(0)
         sys.exit(1)
+    elif cmd == "set-keyboard":
+        if len(sys.argv) < 3:
+            sys.stderr.write("usage: tg.py set-keyboard <button> [button ...]\n"); sys.exit(2)
+        print(json.dumps(set_keyboard(sys.argv[2:]), ensure_ascii=False))
+    elif cmd == "set-commands":
+        pairs = [a.split(":", 1) for a in sys.argv[2:]]
+        print(json.dumps(set_commands(pairs), ensure_ascii=False))
     else:
         sys.stderr.write("usage: tg.py send-text|send-video|send-file|get-offset|updates|poll-reply\n")
         sys.exit(2)

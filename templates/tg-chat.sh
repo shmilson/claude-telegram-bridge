@@ -57,7 +57,7 @@ while IFS= read -r MSG; do
   # Claude call, so it costs nothing and shrinks the growing --resume context.
   LMSG="$(printf '%s' "$MSG" | tr '[:upper:]' '[:lower:]')"
   case "$LMSG" in
-    /new|/reset|/clear|"new chat"|"reset")
+    /new|/reset|/clear|"new chat"|"reset"|"🔄 new chat")
       rm -f "$SESS"
       "$PY" "$TG" send-text "🔄 Fresh conversation started. Previous context cleared." >/dev/null 2>&1 || true
       continue ;;

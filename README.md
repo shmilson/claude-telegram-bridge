@@ -72,6 +72,12 @@ Send `/new` (or `/reset`, `/clear`) to start a fresh conversation. It drops the 
 context stops accumulating, which is the main token cost of a long-lived bot. Handled locally with
 no Claude call.
 
+**Buttons.** You can add tappable buttons via the Bot API (no BotFather needed):
+- `tg.py set-commands "new:Start a fresh chat" "reset:Reset the conversation"` registers the `/`
+  command menu (the ☰ button next to the input).
+- `tg.py set-keyboard "🔄 New chat"` shows a persistent reply-keyboard button. Tapping it sends its
+  label as a message, so the label must match a reset trigger (`tg-chat.sh` matches `🔄 new chat`).
+
 ## Scheduled tasks
 
 `tools/tg-bridge/tg-scheduled.sh "<prompt>"` runs a one-shot Claude task and sends the result to
