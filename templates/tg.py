@@ -44,8 +44,8 @@ def set_keyboard(buttons, text="⌨️ Quick buttons below."):
     """Show a persistent reply keyboard (one button per row). Tapping a button
     sends its label as a normal message, which the bridge acts on. Persists
     across later messages until replaced."""
-    kb = {"keyboard": [[b] for b in buttons],
-          "resize_keyboard": True, "is_persistent": True}
+    rows = [buttons[i:i + 2] for i in range(0, len(buttons), 2)]
+    kb = {"keyboard": rows, "resize_keyboard": True, "is_persistent": True}
     return _post("sendMessage", {"chat_id": CHAT, "text": text,
                                  "reply_markup": json.dumps(kb, ensure_ascii=False)})
 
@@ -54,6 +54,11 @@ def set_commands(pairs):
     """Register the bot's / command menu (the ☰ button). pairs: (cmd, description)."""
     cmds = [{"command": c, "description": d} for c, d in pairs]
     return _post("setMyCommands", {"commands": json.dumps(cmds, ensure_ascii=False)})
+
+
+def send_action(action="typing"):
+    """Show a chat action (e.g. 'typing') for a few seconds."""
+    return _post("sendChatAction", {"chat_id": CHAT, "action": action})
 
 
 def _send_multipart(method, field_name, path, caption, content_type):
@@ -153,6 +158,8 @@ def main():
     elif cmd == "set-commands":
         pairs = [a.split(":", 1) for a in sys.argv[2:]]
         print(json.dumps(set_commands(pairs), ensure_ascii=False))
+    elif cmd == "send-action":
+        print(json.dumps(send_action(sys.argv[2] if len(sys.argv) > 2 else "typing")))
     else:
         sys.stderr.write("usage: tg.py send-text|send-video|send-file|get-offset|updates|poll-reply\n")
         sys.exit(2)

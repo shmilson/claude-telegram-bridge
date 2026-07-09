@@ -49,17 +49,46 @@ if [ "${COUNT:-0}" = 0 ]; then printf '%s' "$MAX" > "$OFF"; exit 0; fi
 
 SYS="$( [ -f "$PROMPT_FILE" ] && cat "$PROMPT_FILE" || printf '%s' "$DEFAULT_PROMPT" )"
 
+HELP_TEXT="🤖 I'm a full Claude Code chat running on this repository.
+Message me freely and I'll act on the repo (with conversation memory), or use commands and the buttons below the input:
+
+/new — fresh conversation (clears memory / resets context)
+/status — bot status (conversation age, listening mode)
+/whatsnew — recent changes in the repo
+/help — this message
+
+Any public-facing output is sent as a draft awaiting your approval."
+
 while IFS= read -r MSG; do
   [ -z "$MSG" ] && continue
   STAMP="$(date +%F_%H%M%S)"
 
-  # Reset command: start a fresh conversation (drops memory). Handled here, no
-  # Claude call, so it costs nothing and shrinks the growing --resume context.
+  # --- Local command handlers (no Claude call, instant) ---
   LMSG="$(printf '%s' "$MSG" | tr '[:upper:]' '[:lower:]')"
   case "$LMSG" in
     /new|/reset|/clear|"new chat"|"reset"|"🔄 new chat")
       rm -f "$SESS"
       "$PY" "$TG" send-text "🔄 Fresh conversation started. Previous context cleared." >/dev/null 2>&1 || true
+      continue ;;
+    /help|help|"❓ help"|"help")
+      "$PY" "$TG" send-text "$HELP_TEXT" >/dev/null 2>&1 || true
+      continue ;;
+    /status|status|"📊 status")
+      if [ -s "$SESS" ]; then
+        MT="$(stat -f %m "$SESS" 2>/dev/null || stat -c %Y "$SESS" 2>/dev/null || echo 0)"
+        AGE=$(( ( $(date +%s) - MT ) / 60 ))
+        SLINE="active conversation, ${AGE} min old (/new to reset)"
+      else SLINE="no active conversation — fresh start"; fi
+      [ "$POLL" != "0" ] && MODE="long-poll (~instant)" || MODE="fixed interval"
+      "$PY" "$TG" send-text "📊 Status
+• $SLINE
+• listening mode: $MODE
+• caught up to message #$MAX" >/dev/null 2>&1 || true
+      continue ;;
+    /whatsnew|whatsnew|"📰 what's new"|"what's new")
+      GL="$(git -C "$REPO" log --oneline -8 2>/dev/null || echo '(git unavailable)')"
+      "$PY" "$TG" send-text "📰 Recent changes in the repo:
+$GL" >/dev/null 2>&1 || true
       continue ;;
   esac
 
@@ -70,6 +99,7 @@ while IFS= read -r MSG; do
 
 Message from user: \"$MSG\""
 
+  "$PY" "$TG" send-action typing >/dev/null 2>&1 || true
   RESUME=""; [ -s "$SESS" ] && RESUME="--resume $(cat "$SESS")"
   if ! OUT="$("$CLAUDE_BIN" -p $RESUME "$WRAP" --dangerously-skip-permissions --output-format json 2>>"$LOG/chat_$STAMP.err")"; then
     # Session may be stale/corrupt; retry fresh (no --resume).

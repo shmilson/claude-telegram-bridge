@@ -68,15 +68,21 @@ CPU stays near zero (a long-poll is a blocked wait, not a busy loop). `tg-chat.s
 
 ## Chat commands
 
-Send `/new` (or `/reset`, `/clear`) to start a fresh conversation. It drops the resumed session so
-context stops accumulating, which is the main token cost of a long-lived bot. Handled locally with
-no Claude call.
+Built-in commands, all handled locally (no Claude call, instant):
+- `/new` (`/reset`, `/clear`) — fresh conversation; drops the resumed session so context stops
+  accumulating (the main token cost of a long-lived bot).
+- `/help` — what the bot is and what each command does.
+- `/status` — conversation age and listening mode (interval vs long-poll).
+- `/whatsnew` — recent repo commits (`git log`).
+
+While Claude works on a request, the bot shows a "typing…" action.
 
 **Buttons.** You can add tappable buttons via the Bot API (no BotFather needed):
 - `tg.py set-commands "new:Start a fresh chat" "reset:Reset the conversation"` registers the `/`
   command menu (the ☰ button next to the input).
-- `tg.py set-keyboard "🔄 New chat"` shows a persistent reply-keyboard button. Tapping it sends its
-  label as a message, so the label must match a reset trigger (`tg-chat.sh` matches `🔄 new chat`).
+- `tg.py set-keyboard "🔄 New chat" "❓ help" "📊 status" "📰 what's new"` shows persistent
+  reply-keyboard buttons (2 per row). Tapping one sends its label as a message, so a label must match
+  a trigger the bridge handles (see the `case` block in `tg-chat.sh`).
 
 ## Scheduled tasks
 

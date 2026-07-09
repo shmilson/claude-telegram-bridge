@@ -103,12 +103,14 @@ To run a one-shot task on a schedule (e.g. "every morning summarize X and messag
 
 ## Operational notes
 
-- **Chat commands:** `/new` (or `/reset`, `/clear`) starts a fresh conversation — deletes the
-  session so `--resume` context stops growing. Handled locally, no Claude call. This is the cheapest
-  way to keep token usage down on a long-lived bot.
-- **Buttons (Bot API, no BotFather):** `tg.py set-commands "new:..." "reset:..."` registers the ☰
-  command menu; `tg.py set-keyboard "🔄 New chat"` shows a persistent tap-button. The button's label
-  is sent as a message, so it must match a reset trigger in `tg-chat.sh`.
+- **Chat commands (local, no Claude call):** `/new` (`/reset`, `/clear`) fresh conversation;
+  `/help` explains the bot; `/status` shows conversation age + listening mode; `/whatsnew` shows
+  recent commits. A "typing…" action shows while Claude works. `/new` is also the cheapest way to
+  keep token usage down on a long-lived bot.
+- **Buttons (Bot API, no BotFather):** `tg.py set-commands "new:..." "help:..."` registers the ☰
+  command menu; `tg.py set-keyboard "🔄 New chat" "❓ help" "📊 status" "📰 what's new"` shows
+  persistent tap-buttons (2/row). A button's label is sent as a message, so it must match a trigger
+  the bridge handles (the `case` block in `tg-chat.sh`).
 - **Response latency** ~1–2 min (poll interval + Claude startup). Lower `StartInterval` to speed up.
 - **Concurrency lock:** `tg-chat.sh` holds `.tg-bridge/.lock` so only one instance runs at a time
   (a long task isn't clobbered). Before editing + reloading, make sure no run is active (the lock is
